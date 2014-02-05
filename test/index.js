@@ -131,9 +131,10 @@ describe('View', function () {
   it('should delegate dom events', function (done) {
     var counter = {
       'click': 0,
-      'focus': 0
+      'focus': 0,
+      'bis': 0
     };
-    var tpl = template('<div class="just-a-template"><div class="l-1"><input class="l-2" value="click" /></div><div class="l-1-bis"><input class="l-2" value="focus" /></div></div>');
+    var tpl = template('<div class="just-a-template"><div class="l-1"><input class="l-2" value="focus" /></div><div class="l-1-bis"><input class="l-2" value="click" /></div></div>');
     var view = new View({
       'template': tpl,
       'delegates': {
@@ -147,8 +148,15 @@ describe('View', function () {
               throw new Error('Delegate does not work properly.');
             }
 
-            if (counter.click === 1 && counter.focus === 1) {
+            if (counter.click === 1 && counter.focus === 1 && counter.bis === 1) {
               done();
+            }
+          }
+        },
+        '.l-1-bis': {
+          'click': function (e) {
+            if (e.type === 'click' && e.target.className === 'l-2') {
+              counter.bis += 1;
             }
           }
         }
@@ -159,12 +167,12 @@ describe('View', function () {
     // NOTE DOM events work only in document tree
     document.body.appendChild(view.getElement());
 
-    view.getElement().querySelector('.l-1 .l-2').click();
+    view.getElement().querySelector('.l-1-bis .l-2').click();
 
     // TODO use `input.focus();` when retarded Firefox & IE will handle it properly)
     var e = document.createEvent('HTMLEvents');
     e.initEvent('focus', true, true);
-    view.getElement().querySelector('.l-1-bis .l-2').dispatchEvent(e);
+    view.getElement().querySelector('.l-1 .l-2').dispatchEvent(e);
   });
 
   it('should be properly destroyed', function () {

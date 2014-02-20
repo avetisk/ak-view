@@ -2,7 +2,7 @@
 
 'use strict';
 
-var View = require('../');
+var View = process.env.AK_VIEW_TEST_COVERAGE ? require('../lib-cov/view') : require('../');
 var assert = require('assert');
 var template = require('ak-template');
 var createElement = function (className) {

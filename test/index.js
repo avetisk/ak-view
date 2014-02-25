@@ -65,20 +65,22 @@ describe('View', function () {
   });
 
   it('view#el = dom, view#el = dom2', function (done) {
+    var el = createElement('bolo');
     var dom = createElement('hari');
     var dom2 = createElement('haribol');
-    var parents = [dom, dom2];
+    var parents = [el, dom, dom2];
     var counterElement = 0;
     var counterDelegate = 0;
     var counterUndelegate = 0;
 
     var view = new View({
+      'el': el,
       'domEvents': {
         'span': {
           'click': function (e) {
             assert.equal(e.target.parentElement, parents.shift());
 
-            if (! parents.length && counterElement === 2 && counterDelegate === 2 && counterUndelegate === 1) {
+            if (! parents.length && counterElement === 2 && counterDelegate === 2 && counterUndelegate === 2) {
               done();
             }
           }
@@ -101,6 +103,8 @@ describe('View', function () {
     assert.throws(function () {
       view.el = '';
     }, '`el` must be a HTMLElement.');
+
+    view.el.querySelector('span').click();
 
     view.el = dom;
     view.el.querySelector('span').click();

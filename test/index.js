@@ -15,21 +15,17 @@ var createElement = function (className) {
 };
 
 describe('View', function () {
-  it('initialize', function (done) {
+  it('initialize', function () {
     var view = new View();
 
-    assert.throws(function () {
-      view.getElement();
-    }, 'Empty view.');
-
-    done();
+    assert(view.el === undefined);
   });
 
   it('initialize with an element', function (done) {
     var dom = document.createElement('div');
     var view = new View({'el': dom});
 
-    assert(view.getElement() === dom);
+    assert(view.el === dom);
 
     done();
   });
@@ -38,9 +34,7 @@ describe('View', function () {
     var view = new View();
     view.render();
 
-    assert.throws(function () {
-      view.getElement();
-    }, 'Empty view.');
+    assert(view.el === undefined);
 
     done();
   });
@@ -50,8 +44,8 @@ describe('View', function () {
     var view = new View({'template': tpl});
     view.render({'hari': 'Hari Bol !'});
 
-    assert.equal(view.getElement().className, 'just-a-template');
-    assert.equal(view.getElement().nextSibling, null);
+    assert.equal(view.el.className, 'just-a-template');
+    assert.equal(view.el.nextSibling, null);
 
     done();
   });
@@ -62,82 +56,88 @@ describe('View', function () {
     var view = new View();
     view.render({'hari': 'Hari Bol !'});
 
-    assert.equal(view.getElement().className, 'just-a-template');
-    assert.equal(view.getElement().nextSibling, null);
+    assert.equal(view.el.className, 'just-a-template');
+    assert.equal(view.el.nextSibling, null);
 
     delete View.template;
 
     done();
   });
 
-  it('#setElement(el), #setElement(el2, noDelegate), #setElement(el3)', function (done) {
+  it('view#el = dom, view#el = dom2', function (done) {
     var dom = createElement('hari');
     var dom2 = createElement('haribol');
-    var dom3 = createElement('harihari');
-    var parents = [dom, dom3];
+    var parents = [dom, dom2];
     var counterElement = 0;
     var counterDelegate = 0;
     var counterUndelegate = 0;
 
     var view = new View({
-      'delegates': {
+      'domEvents': {
         'span': {
           'click': function (e) {
             assert.equal(e.target.parentElement, parents.shift());
 
-            if (! parents.length && counterElement === 3 && counterDelegate === 2 && counterUndelegate === 2) {
+            if (! parents.length && counterElement === 2 && counterDelegate === 2 && counterUndelegate === 1) {
               done();
             }
           }
         }
       }
     });
-    view.eventEmitter.on('change.element', function (ns, oldElement, newElement) {
+    view.on('element.change', function (ns, oldElement, newElement) {
       counterElement += 1;
 
       assert(oldElement !== newElement);
-      assert(newElement === view.getElement());
+      assert(newElement === view.el);
     });
-    view.eventEmitter.on('change.delegate', function () {
+    view.on('events.bind', function () {
       counterDelegate += 1;
     });
-    view.eventEmitter.on('change.undelegate', function () {
+    view.on('events.unbind', function () {
       counterUndelegate += 1;
     });
 
     assert.throws(function () {
-      view.setElement();
+      view.el = '';
     }, '`el` must be a HTMLElement.');
 
-    view.setElement(dom);
-    view.getElement().querySelector('span').click();
+    view.el = dom;
+    view.el.querySelector('span').click();
 
-    assert.equal(view.getElement().className, 'hari');
-    assert.equal(view.getElement(), dom);
+    assert.equal(view.el.className, 'hari');
+    assert.equal(view.el, dom);
 
-    view.setElement(dom2, true);
-    view.getElement().querySelector('span').click();
+    view.el = dom2;
+    view.el.querySelector('span').click();
 
-    assert.equal(view.getElement().className, 'haribol');
-    assert.equal(view.getElement(), dom2);
-
-    view.setElement(dom3);
-    view.getElement().querySelector('span').click();
-
-    assert.equal(view.getElement().className, 'harihari');
-    assert.equal(view.getElement(), dom3);
+    assert.equal(view.el.className, 'haribol');
+    assert.equal(view.el, dom2);
   });
 
   it('should delegate dom events', function (done) {
     var counter = {
       'click': 0,
       'focus': 0,
-      'bis': 0
+      'bis': 0,
+      'self': 0
     };
     var tpl = template('<div class="just-a-template"><div class="l-1"><input class="l-2" value="focus" /></div><div class="l-1-bis"><input class="l-2" value="click" /></div></div>');
     var view = new View({
       'template': tpl,
-      'delegates': {
+      'eventsContext': {'x': 1},
+      'domEvents': {
+        '': {
+          'click': function (e) {
+            e.type === 'click' && e.target === view.el && (counter.self += 1);
+            counter.click === 1 &&
+            counter.focus === 1 &&
+            counter.bis === 1 &&
+            counter.self === 1 &&
+            this.x === 1 &&
+            done();
+          }
+        },
         '.l-2': {
           'click, focus': function (e) {
             if (e.type === 'click' && e.target.value === 'click') {
@@ -146,10 +146,6 @@ describe('View', function () {
               counter.focus += 1;
             } else {
               throw new Error('Delegate does not work properly.');
-            }
-
-            if (counter.click === 1 && counter.focus === 1 && counter.bis === 1) {
-              done();
             }
           }
         },
@@ -165,14 +161,17 @@ describe('View', function () {
     view.render();
 
     // NOTE DOM events work only in document tree
-    document.body.appendChild(view.getElement());
+    document.body.appendChild(view.el);
 
-    view.getElement().querySelector('.l-1-bis .l-2').click();
+    view.el.querySelector('.l-1-bis .l-2').click();
 
     // TODO use `input.focus();` when retarded Firefox & IE will handle it properly)
     var e = document.createEvent('HTMLEvents');
     e.initEvent('focus', true, true);
-    view.getElement().querySelector('.l-1 .l-2').dispatchEvent(e);
+    view.el.querySelector('.l-1 .l-2').dispatchEvent(e);
+
+    // click view.el
+    view.el.click();
   });
 
   it('should be properly destroyed', function () {
@@ -180,7 +179,7 @@ describe('View', function () {
     var tpl = template('<div class="just-a-template kill-me"><span class="lool"><%= locals.hari %></span></div><div class="never">Bad</div>');
     var view = new View({
       'template': tpl,
-      'delegates': {
+      'domEvents': {
         '.lool': {
           'click, focus': function () {
             throw new Error('Undelegating DOM events not done.');
@@ -189,12 +188,12 @@ describe('View', function () {
       }
     });
     view.render({'hari': 'Hari Bol !'});
-    view.eventEmitter.on('change.destroy', function () {
+    view.on('destroy', function () {
       counter += 1;
     });
 
     // NOTE DOM events work only in document tree
-    document.body.appendChild(view.getElement());
+    document.body.appendChild(view.el);
 
     var span = document.querySelector('.just-a-template.kill-me span');
 
@@ -202,18 +201,14 @@ describe('View', function () {
     span.click();
 
     assert.equal(document.querySelector('.just-a-template.kill-me span'), null);
-    assert.throws(function () {
-      view.getElement();
-    }, 'Empty view.');
+    assert(view.el === undefined);
 
     var view2 = new View({'template': tpl});
     view2.render({'hari': 'Hari Bol !'});
 
-    assert(view2.getElement() instanceof HTMLElement);
+    assert(view2.el instanceof HTMLElement);
     view2.destroy();
-    assert.throws(function () {
-      view2.getElement();
-    });
+    assert(view2.el === undefined);
 
     assert(counter === 1);
   });

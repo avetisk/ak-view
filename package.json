@@ -1,6 +1,6 @@
 {
   "name": "ak-view",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "client side view",
   "keywords": [
     "view"
@@ -26,7 +26,7 @@
   "dependencies": {
     "ak-delegate": "~0.0.4",
     "stluafed": "~0.0.4",
-    "ak-eventemitter": "~0.0.4"
+    "ak-eventemitter": "~0.0.5"
   },
   "devDependencies": {
     "ak-template": "*",

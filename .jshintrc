@@ -19,6 +19,7 @@
   "trailing": true,
   "gcl": true,
   "maxcomplexity": 10,
+  "expr": true,
 
   "sub": true,
   "boss": true,

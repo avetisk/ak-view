@@ -30,6 +30,23 @@ describe('View', function () {
     done();
   });
 
+  it('initialize with a string and attributes', function (done) {
+    var view = new View({
+      'el': 'todo',
+      'attrs': {
+        'class': 'my-class is-cool',
+        'data-x': 'x'
+      }
+    });
+
+    assert(view.el instanceof HTMLElement, 'el should be a valid HTMLElement.');
+    assert(view.el.tagName.toLowerCase() === 'todo', 'el should be a HTMLElement of given name');
+    assert(view.el.className === 'my-class is-cool');
+    assert(view.el.getAttribute('data-x') === 'x');
+
+    done();
+  });
+
   it('#render() without template', function (done) {
     var view = new View();
     view.render();
